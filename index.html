@@ -434,34 +434,39 @@ body {
 <script>
 // ============================================================
 // 🗺️  YOUR QUESTS — edit these!
+// xp: 1 = Common, 2 = Uncommon, 3 = Rare (shown as ★ ★★ ★★★)
 // ============================================================
 const QUESTS = [
-  { text: "Find a coffee shop you've never been to. Spend an hour there with no phone.", category: "🧭 EXPLORE" },
-  { text: "Cook a full meal using only ingredients already in your kitchen.", category: "🍳 CRAFT" },
-  { text: "Take a 30-minute walk with no destination in mind.", category: "🚶 WANDER" },
-  { text: "Write a letter to someone you haven't spoken to in a year.", category: "✉️ CONNECT" },
-  { text: "Find a park and sit quietly for 20 minutes. No scrolling.", category: "🌿 REST" },
-  { text: "Learn one magic trick well enough to show someone today.", category: "🎩 LEARN" },
-  { text: "Visit a thrift store and buy something interesting under £5.", category: "🛍️ HUNT" },
-  { text: "Draw something from memory — no reference photos allowed.", category: "🎨 CREATE" },
-  { text: "Watch a film from a country you have never visited.", category: "🎬 DISCOVER" },
-  { text: "Find the highest point within walking distance and go there.", category: "⛰️ EXPLORE" },
-  { text: "Try a food you've always said you don't like.", category: "🍜 DARE" },
-  { text: "Spend 1 hour learning about a random historical event.", category: "📚 LEARN" },
-  { text: "Take 10 photos of things that are the exact same colour.", category: "📸 OBSERVE" },
-  { text: "Have a real conversation with a stranger — even briefly.", category: "💬 CONNECT" },
-  { text: "Build something with whatever materials you have at home.", category: "🔨 BUILD" },
-  { text: "Find a local market or event you didn't know existed.", category: "🎪 DISCOVER" },
-  { text: "Pick a random Wikipedia article and go deep on it.", category: "🌐 LEARN" },
-  { text: "Do the one thing you have been putting off for a month.", category: "⚡ DARE" },
-  { text: "Make a playlist of 10 songs that defined one year of your life.", category: "🎵 REFLECT" },
-  { text: "Find a bench with a good view and do nothing for 15 minutes.", category: "🌅 REST" },
+  { text: "Find a park and sit quietly for 20 minutes. No scrolling.",            category: "🌿 REST",     xp: 1 },
+  { text: "Take a 30-minute walk with no destination in mind.",                   category: "🚶 WANDER",   xp: 1 },
+  { text: "Watch a film from a country you have never visited.",                  category: "🎬 DISCOVER", xp: 1 },
+  { text: "Pick a random Wikipedia article and go deep on it.",                   category: "🌐 LEARN",    xp: 1 },
+  { text: "Find a bench with a good view and do nothing for 15 minutes.",         category: "🌅 REST",     xp: 1 },
+  { text: "Take 10 photos of things that are the exact same colour.",             category: "📸 OBSERVE",  xp: 1 },
+  { text: "Cook a full meal using only ingredients already in your kitchen.",     category: "🍳 CRAFT",    xp: 2 },
+  { text: "Visit a thrift store and buy something interesting under £5.",         category: "🛍️ HUNT",     xp: 2 },
+  { text: "Draw something from memory — no reference photos allowed.",            category: "🎨 CREATE",   xp: 2 },
+  { text: "Spend 1 hour learning about a random historical event.",               category: "📚 LEARN",    xp: 2 },
+  { text: "Find a local market or event you didn't know existed.",                category: "🎪 DISCOVER", xp: 2 },
+  { text: "Make a playlist of 10 songs that defined one year of your life.",      category: "🎵 REFLECT",  xp: 2 },
+  { text: "Learn one magic trick well enough to show someone today.",             category: "🎩 LEARN",    xp: 2 },
+  { text: "Find a coffee shop you've never been to. Spend an hour there with no phone.", category: "🧭 EXPLORE", xp: 2 },
+  { text: "Write a letter to someone you haven't spoken to in a year.",           category: "✉️ CONNECT",  xp: 3 },
+  { text: "Find the highest point within walking distance and go there.",         category: "⛰️ EXPLORE",  xp: 3 },
+  { text: "Try a food you've always said you don't like.",                        category: "🍜 DARE",     xp: 3 },
+  { text: "Have a real conversation with a stranger — even briefly.",             category: "💬 CONNECT",  xp: 3 },
+  { text: "Build something with whatever materials you have at home.",            category: "🔨 BUILD",    xp: 3 },
+  { text: "Do the one thing you have been putting off for a month.",              category: "⚡ DARE",     xp: 3 },
 ];
 
+
+
 // ── State ──
-let done = 0, streak = 0, level = 1, xp = 0;
-const XP_PER_LEVEL = 5;
+let done = 0, streak = 0, level = 1, xpTotal = 0;
 let currentQuest = null, recentIdx = [];
+
+// XP needed to reach the NEXT level from current: increases each level
+function xpForLevel(lvl) { return lvl * 5; } // level 1→2 needs 5, 2→3 needs 10, etc.
 
 function getRandomQuest() {
   let pool = QUESTS.map((_,i)=>i).filter(i=>!recentIdx.includes(i));
@@ -478,10 +483,11 @@ function rollQuest() {
   qt.classList.add('fade'); qc.classList.add('fade');
   setTimeout(()=>{
     currentQuest = getRandomQuest();
+    const r = RARITY[currentQuest.xp];
     document.getElementById('questIdle').style.display='none';
     qt.style.display='block'; qc.style.display='block';
     qt.textContent=currentQuest.text;
-    qc.textContent=currentQuest.category;
+    qc.innerHTML=`<span style="color:var(--gold)">${currentQuest.category}</span>  <span style="color:#88cc44">+${currentQuest.xp} XP</span>`;
     qt.classList.remove('fade'); qc.classList.remove('fade');
     document.getElementById('actionRow').style.display='flex';
   }, 180);
@@ -489,19 +495,28 @@ function rollQuest() {
 
 function completeQuest() {
   if (!currentQuest) return;
-  done++; streak++; xp++;
+  done++; streak++;
+  xpTotal += currentQuest.xp;
   document.getElementById('statDone').textContent=done;
   document.getElementById('statStreak').textContent=streak;
-  const xpInLevel = xp % XP_PER_LEVEL;
-  const newLevel = Math.floor(xp/XP_PER_LEVEL)+1;
-  updateXpBar(xpInLevel, XP_PER_LEVEL);
-  if (newLevel > level) {
-    level=newLevel;
+
+  // Calculate level from total XP (levels scale: need level*5 xp each level)
+  let lvl = 1, xpNeeded = 0;
+  while (xpTotal >= xpNeeded + xpForLevel(lvl)) {
+    xpNeeded += xpForLevel(lvl);
+    lvl++;
+  }
+  const xpIntoLevel = xpTotal - xpNeeded;
+  const xpThisLevel = xpForLevel(lvl);
+
+  updateXpBar(xpIntoLevel, xpThisLevel, lvl);
+
+  if (lvl > level) {
+    level = lvl;
     document.getElementById('statLevel').textContent=level;
     showLevelUp(level);
   } else {
-    const msgs=['✔ Quest complete! +1 XP','✔ Achievement unlocked!',`✔ ${streak>1?streak+' quest streak!':'Nice work, adventurer.'}`];
-    showToast(msgs[Math.floor(Math.random()*msgs.length)]);
+    showToast(`✔ Quest complete! +${currentQuest.xp} XP`);
   }
   resetBoard();
 }
@@ -526,9 +541,9 @@ function resetBoard() {
   }, 180);
 }
 
-function updateXpBar(cur, max) {
+function updateXpBar(cur, max, lvl) {
   document.getElementById('xpBar').style.width=(cur/max*100)+'%';
-  document.getElementById('xpLabel').textContent=`${cur} / ${max} XP to next level`;
+  document.getElementById('xpLabel').textContent=`${cur} / ${max} XP  (next level needs ${xpForLevel(lvl)} XP)`;
 }
 
 function showToast(msg) {
