@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>Side Quest</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --dirt-dark: #3d2b1a;
+  --dirt-mid:  #5a3e28;
+  --stone:     #8a8a8a;
+  --stone-dark:#6b6b6b;
+  --stone-light:#a8a8a8;
+  --grass-top: #5d9e3f;
+  --grass-dark:#4a7d30;
+  --text-white:#f0f0f0;
+  --gold:      #ffdd44;
+  --green-btn: #5aad32;
+  --green-btn-dark: #3d7a20;
+  --red-btn:   #ad3232;
+  --red-btn-dark: #7a2020;
+  --panel-bg:  rgba(0,0,0,0.82);
+}
+
+html, body { height: 100%; width: 100%; }
+
+body {
+  background: linear-gradient(180deg, #7ec8f0 0%, #a8daf8 40%, #c5e8f8 100%);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: 'VT323', 'Courier New', monospace;
+  image-rendering: pixelated;
+  position: relative;
+  overflow-x: hidden;
+  padding-bottom: 80px;
+}
+
+/* CLOUDS */
+.clouds {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 120px;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.cloud { position: absolute; background: white; opacity: 0.9; }
+.cloud::before, .cloud::after { content: ''; position: absolute; background: white; }
+.c1 { width: 64px; height: 16px; top: 20px; animation: drift 28s linear infinite; left: -80px; }
+.c1::before { width: 32px; height: 16px; top: -16px; left: 16px; }
+.c1::after  { width: 48px; height: 16px; top: -8px; left: 8px; }
+.c2 { width: 80px; height: 16px; top: 55px; animation: drift 38s linear infinite; animation-delay: -14s; left: -100px; }
+.c2::before { width: 48px; height: 16px; top: -16px; left: 16px; }
+.c2::after  { width: 32px; height: 16px; top: -8px; left: 32px; }
+.c3 { width: 48px; height: 16px; top: 32px; animation: drift 32s linear infinite; animation-delay: -24s; left: -60px; }
+.c3::before { width: 32px; height: 16px; top: -16px; left: 8px; }
+@keyframes drift { from { transform: translateX(0); } to { transform: translateX(calc(100vw + 140px)); } }
+
+/* GROUND */
+.ground {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  height: 48px;
+  z-index: 0;
+}
+.grass-layer {
+  height: 16px;
+  background: repeating-linear-gradient(90deg,
+    var(--grass-top) 0px, var(--grass-top) 16px,
+    var(--grass-dark) 16px, var(--grass-dark) 32px);
+}
+.dirt-layer {
+  height: 32px;
+  background: repeating-linear-gradient(90deg,
+    var(--dirt-mid) 0px, var(--dirt-mid) 16px,
+    var(--dirt-dark) 16px, var(--dirt-dark) 32px);
+}
+
+/* TREES */
+.trees {
+  position: fixed;
+  bottom: 48px; left: 0; right: 0;
+  height: 80px;
+  pointer-events: none;
+  z-index: 0;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+.tree { display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+.tree-leaves {
+  width: 32px; height: 32px;
+  background: #3d8f28;
+  box-shadow: inset -4px -4px 0 #2d6e1e, inset 4px 4px 0 #5ab83e;
+}
+.tree-trunk {
+  width: 16px; height: 16px;
+  background: #7a5020;
+  box-shadow: inset -4px 0 0 #5a3a12;
+}
+
+/* WRAPPER */
+.wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  padding: 16px 14px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* TITLE */
+.title-main {
+  font-size: clamp(44px, 12vw, 60px);
+  color: var(--gold);
+  text-shadow: 3px 3px 0 #a07000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  line-height: 1;
+  letter-spacing: 2px;
+  display: block;
+  text-align: center;
+  margin-top: 8px;
+}
+.title-sub {
+  font-size: 18px;
+  color: #b0c0d0;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-bottom: 14px;
+}
+
+/* MC PANEL */
+.mc-panel {
+  width: 100%;
+  background: var(--panel-bg);
+  border: 3px solid #555;
+  box-shadow:
+    inset 2px 2px 0 rgba(255,255,255,0.14),
+    inset -2px -2px 0 rgba(0,0,0,0.5),
+    0 0 0 1px #222;
+  padding: 14px;
+  margin-bottom: 8px;
+}
+.panel-label {
+  font-size: 14px;
+  color: #aaa;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 2px;
+  margin-bottom: 6px;
+}
+.pixel-divider {
+  width: 100%;
+  height: 4px;
+  background: repeating-linear-gradient(90deg, #555 0px, #555 4px, #333 4px, #333 8px);
+  margin-bottom: 10px;
+}
+
+/* QUEST AREA */
+.quest-display {
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.quest-text {
+  font-size: clamp(20px, 5.5vw, 26px);
+  color: white;
+  text-shadow: 1px 1px 0 #000, 2px 2px 0 #000;
+  text-align: center;
+  line-height: 1.25;
+  transition: opacity 0.18s;
+}
+.quest-text.fade { opacity: 0; }
+.quest-idle {
+  font-size: clamp(18px, 5vw, 22px);
+  color: #777;
+  text-shadow: 1px 1px 0 #000;
+  text-align: center;
+  line-height: 1.4;
+}
+.quest-category {
+  font-size: 18px;
+  color: var(--gold);
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+  transition: opacity 0.18s;
+}
+.quest-category.fade { opacity: 0; }
+
+/* MC BUTTON */
+.mc-btn {
+  display: block;
+  width: 100%;
+  font-family: 'VT323', monospace;
+  font-size: clamp(22px, 6vw, 28px);
+  letter-spacing: 1px;
+  text-shadow: 1px 1px 0 #000, 2px 2px 0 #000;
+  color: white;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  padding: 10px 16px 8px;
+  text-align: center;
+  position: relative;
+  transition: filter 0.05s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  border-top: 3px solid;
+  border-left: 3px solid;
+  border-right: 3px solid;
+  border-bottom: 4px solid;
+  margin-bottom: 6px;
+}
+.mc-btn:last-child { margin-bottom: 0; }
+
+.mc-btn-stone {
+  background: var(--stone);
+  border-top-color: var(--stone-light);
+  border-left-color: var(--stone-light);
+  border-right-color: var(--stone-dark);
+  border-bottom-color: var(--stone-dark);
+}
+.mc-btn-stone:hover { filter: brightness(1.12); }
+.mc-btn-stone:active {
+  filter: brightness(0.85);
+  border-top-color: var(--stone-dark); border-left-color: var(--stone-dark);
+  border-right-color: var(--stone-light); border-bottom-color: var(--stone-light);
+  transform: translateY(1px);
+}
+
+.mc-btn-green {
+  background: var(--green-btn);
+  border-top-color: #78d048; border-left-color: #78d048;
+  border-right-color: var(--green-btn-dark); border-bottom-color: var(--green-btn-dark);
+}
+.mc-btn-green:hover { filter: brightness(1.1); }
+.mc-btn-green:active {
+  filter: brightness(0.85);
+  border-top-color: var(--green-btn-dark); border-left-color: var(--green-btn-dark);
+  border-right-color: #78d048; border-bottom-color: #78d048;
+  transform: translateY(1px);
+}
+
+.mc-btn-red {
+  background: var(--red-btn);
+  border-top-color: #d05050; border-left-color: #d05050;
+  border-right-color: var(--red-btn-dark); border-bottom-color: var(--red-btn-dark);
+}
+.mc-btn-red:hover { filter: brightness(1.1); }
+.mc-btn-red:active {
+  filter: brightness(0.85);
+  border-top-color: var(--red-btn-dark); border-left-color: var(--red-btn-dark);
+  border-right-color: #d05050; border-bottom-color: #d05050;
+  transform: translateY(1px);
+}
+
+.btn-row { display: flex; gap: 6px; width: 100%; margin-bottom: 6px; }
+.btn-row .mc-btn { flex: 1; margin-bottom: 0; }
+
+/* STATS */
+.stats-row { display: flex; gap: 6px; width: 100%; }
+.stat-block {
+  flex: 1;
+  background: rgba(0,0,0,0.7);
+  border: 2px solid #444;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.1), inset -1px -1px 0 rgba(0,0,0,0.5);
+  padding: 8px 4px;
+  text-align: center;
+}
+.stat-value {
+  font-size: clamp(28px, 8vw, 38px);
+  color: var(--gold);
+  text-shadow: 1px 1px 0 #000, 2px 2px 0 #a07000;
+  line-height: 1;
+  display: block;
+}
+.stat-label {
+  font-size: 13px;
+  color: #aaa;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+}
+
+/* XP BAR */
+.xp-bar-bg {
+  width: 100%; height: 12px;
+  background: #111;
+  border: 2px solid #333;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.xp-bar-fill {
+  height: 100%;
+  background: #6adb1f;
+  box-shadow: inset 0 3px 0 rgba(255,255,255,0.3);
+  transition: width 0.4s ease;
+  width: 0%;
+}
+.xp-label {
+  font-size: 14px;
+  color: #88cc44;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 1px;
+  text-align: center;
+  margin-top: 3px;
+}
+
+/* TOAST */
+.toast {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  z-index: 100;
+  background: rgba(0,0,0,0.93);
+  border: 3px solid #555;
+  box-shadow: inset 1px 1px 0 rgba(255,255,255,0.15), inset -1px -1px 0 rgba(0,0,0,0.5);
+  padding: 8px 20px 6px;
+  font-size: 22px;
+  color: white;
+  text-shadow: 1px 1px 0 #000;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  max-width: 88vw;
+  text-align: center;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* LEVEL UP */
+.levelup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.65);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+}
+.levelup.show { opacity: 1; pointer-events: all; }
+.levelup-text {
+  font-size: clamp(52px, 14vw, 72px);
+  color: var(--gold);
+  text-shadow: 3px 3px 0 #a07000, 0 0 24px #ffdd44;
+  text-align: center;
+  animation: pulse 0.6s ease infinite alternate;
+}
+@keyframes pulse { from { transform: scale(1); } to { transform: scale(1.06); } }
+.levelup-sub { font-size: 26px; color: white; text-shadow: 2px 2px 0 #000; margin-top: 8px; }
+.levelup-tap { font-size: 18px; color: #aaa; text-shadow: 1px 1px 0 #000; margin-top: 28px; animation: blink 1s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+</style>
+</head>
+<body>
+
+<div class="clouds">
+  <div class="cloud c1"></div>
+  <div class="cloud c2"></div>
+  <div class="cloud c3"></div>
+</div>
+<div class="trees" id="trees"></div>
+<div class="ground">
+  <div class="grass-layer"></div>
+  <div class="dirt-layer"></div>
+</div>
+
+<div class="wrapper">
+  <span class="title-main">SIDE QUEST</span>
+  <div class="title-sub">[ weekend adventure log ]</div>
+
+  <!-- Quest panel -->
+  <div class="mc-panel">
+    <div class="panel-label">▶ CURRENT QUEST</div>
+    <div class="pixel-divider"></div>
+    <div class="quest-display">
+      <div class="quest-text" id="questText" style="display:none"></div>
+      <div class="quest-idle" id="questIdle">Press [ Roll Quest ]<br>to receive your mission</div>
+      <div class="quest-category" id="questCategory" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <button class="mc-btn mc-btn-stone" onclick="rollQuest()">⚔ Roll Quest</button>
+
+  <div class="btn-row" id="actionRow" style="display:none">
+    <button class="mc-btn mc-btn-green" onclick="completeQuest()">✔ Complete</button>
+    <button class="mc-btn mc-btn-red" onclick="skipQuest()">✘ Skip</button>
+  </div>
+
+  <!-- Stats panel -->
+  <div class="mc-panel">
+    <div class="panel-label">▶ STATS</div>
+    <div class="pixel-divider"></div>
+    <div class="stats-row">
+      <div class="stat-block">
+        <span class="stat-value" id="statDone">0</span>
+        <span class="stat-label">DONE</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-value" id="statStreak">0</span>
+        <span class="stat-label">STREAK</span>
+      </div>
+      <div class="stat-block">
+        <span class="stat-value" id="statLevel">1</span>
+        <span class="stat-label">LEVEL</span>
+      </div>
+    </div>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBar"></div></div>
+    <div class="xp-label" id="xpLabel">0 / 5 XP to next level</div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="levelup" id="levelup" onclick="dismissLevelup()">
+  <div class="levelup-text">LEVEL UP!</div>
+  <div class="levelup-sub" id="levelupSub">You reached Level 2</div>
+  <div class="levelup-tap">[ tap to continue ]</div>
+</div>
+
+<script>
+// ============================================================
+// 🗺️  YOUR QUESTS — edit these!
+// ============================================================
+const QUESTS = [
+  { text: "Find a coffee shop you've never been to. Spend an hour there with no phone.", category: "🧭 EXPLORE" },
+  { text: "Cook a full meal using only ingredients already in your kitchen.", category: "🍳 CRAFT" },
+  { text: "Take a 30-minute walk with no destination in mind.", category: "🚶 WANDER" },
+  { text: "Write a letter to someone you haven't spoken to in a year.", category: "✉️ CONNECT" },
+  { text: "Find a park and sit quietly for 20 minutes. No scrolling.", category: "🌿 REST" },
+  { text: "Learn one magic trick well enough to show someone today.", category: "🎩 LEARN" },
+  { text: "Visit a thrift store and buy something interesting under £5.", category: "🛍️ HUNT" },
+  { text: "Draw something from memory — no reference photos allowed.", category: "🎨 CREATE" },
+  { text: "Watch a film from a country you have never visited.", category: "🎬 DISCOVER" },
+  { text: "Find the highest point within walking distance and go there.", category: "⛰️ EXPLORE" },
+  { text: "Try a food you've always said you don't like.", category: "🍜 DARE" },
+  { text: "Spend 1 hour learning about a random historical event.", category: "📚 LEARN" },
+  { text: "Take 10 photos of things that are the exact same colour.", category: "📸 OBSERVE" },
+  { text: "Have a real conversation with a stranger — even briefly.", category: "💬 CONNECT" },
+  { text: "Build something with whatever materials you have at home.", category: "🔨 BUILD" },
+  { text: "Find a local market or event you didn't know existed.", category: "🎪 DISCOVER" },
+  { text: "Pick a random Wikipedia article and go deep on it.", category: "🌐 LEARN" },
+  { text: "Do the one thing you have been putting off for a month.", category: "⚡ DARE" },
+  { text: "Make a playlist of 10 songs that defined one year of your life.", category: "🎵 REFLECT" },
+  { text: "Find a bench with a good view and do nothing for 15 minutes.", category: "🌅 REST" },
+];
+
+// ── State ──
+let done = 0, streak = 0, level = 1, xp = 0;
+const XP_PER_LEVEL = 5;
+let currentQuest = null, recentIdx = [];
+
+function getRandomQuest() {
+  let pool = QUESTS.map((_,i)=>i).filter(i=>!recentIdx.includes(i));
+  if (!pool.length) { recentIdx=[]; pool=QUESTS.map((_,i)=>i); }
+  const pick = pool[Math.floor(Math.random()*pool.length)];
+  recentIdx.push(pick);
+  if (recentIdx.length > Math.floor(QUESTS.length/2)) recentIdx.shift();
+  return QUESTS[pick];
+}
+
+function rollQuest() {
+  const qt=document.getElementById('questText');
+  const qc=document.getElementById('questCategory');
+  qt.classList.add('fade'); qc.classList.add('fade');
+  setTimeout(()=>{
+    currentQuest = getRandomQuest();
+    document.getElementById('questIdle').style.display='none';
+    qt.style.display='block'; qc.style.display='block';
+    qt.textContent=currentQuest.text;
+    qc.textContent=currentQuest.category;
+    qt.classList.remove('fade'); qc.classList.remove('fade');
+    document.getElementById('actionRow').style.display='flex';
+  }, 180);
+}
+
+function completeQuest() {
+  if (!currentQuest) return;
+  done++; streak++; xp++;
+  document.getElementById('statDone').textContent=done;
+  document.getElementById('statStreak').textContent=streak;
+  const xpInLevel = xp % XP_PER_LEVEL;
+  const newLevel = Math.floor(xp/XP_PER_LEVEL)+1;
+  updateXpBar(xpInLevel, XP_PER_LEVEL);
+  if (newLevel > level) {
+    level=newLevel;
+    document.getElementById('statLevel').textContent=level;
+    showLevelUp(level);
+  } else {
+    const msgs=['✔ Quest complete! +1 XP','✔ Achievement unlocked!',`✔ ${streak>1?streak+' quest streak!':'Nice work, adventurer.'}`];
+    showToast(msgs[Math.floor(Math.random()*msgs.length)]);
+  }
+  resetBoard();
+}
+
+function skipQuest() {
+  streak=0;
+  document.getElementById('statStreak').textContent=streak;
+  showToast('✘ Quest abandoned. Coward.');
+  resetBoard();
+}
+
+function resetBoard() {
+  const qt=document.getElementById('questText');
+  const qc=document.getElementById('questCategory');
+  qt.classList.add('fade'); qc.classList.add('fade');
+  setTimeout(()=>{
+    qt.style.display='none'; qc.style.display='none';
+    document.getElementById('questIdle').style.display='block';
+    document.getElementById('actionRow').style.display='none';
+    qt.classList.remove('fade'); qc.classList.remove('fade');
+    currentQuest=null;
+  }, 180);
+}
+
+function updateXpBar(cur, max) {
+  document.getElementById('xpBar').style.width=(cur/max*100)+'%';
+  document.getElementById('xpLabel').textContent=`${cur} / ${max} XP to next level`;
+}
+
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2600);
+}
+
+function showLevelUp(lvl) {
+  document.getElementById('levelupSub').textContent=`You reached Level ${lvl}`;
+  document.getElementById('levelup').classList.add('show');
+}
+function dismissLevelup() {
+  document.getElementById('levelup').classList.remove('show');
+  showToast(`★ Welcome to Level ${level}!`);
+}
+
+// Build pixel trees
+(function(){
+  const c=document.getElementById('trees');
+  const n=Math.floor(window.innerWidth/36)+4;
+  for(let i=0;i<n;i++){
+    const t=document.createElement('div');
+    t.className='tree';
+    const s=[24,32,40][Math.floor(Math.random()*3)];
+    t.innerHTML=`<div class="tree-leaves" style="width:${s}px;height:${s}px"></div><div class="tree-trunk"></div>`;
+    t.style.marginRight=(Math.random()*20)+'px';
+    c.appendChild(t);
+  }
+})();
+</script>
+</body>
+</html>
