@@ -483,7 +483,6 @@ function rollQuest() {
   qt.classList.add('fade'); qc.classList.add('fade');
   setTimeout(()=>{
     currentQuest = getRandomQuest();
-    const r = RARITY[currentQuest.xp];
     document.getElementById('questIdle').style.display='none';
     qt.style.display='block'; qc.style.display='block';
     qt.textContent=currentQuest.text;
